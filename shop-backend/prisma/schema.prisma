@@ -1,0 +1,45 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+model Product {
+  id          Int      @id @default(autoincrement())
+  name        String
+  description String
+  price       Int
+  image       String
+  createdAt   DateTime @default(now())
+}
+
+// Định nghĩa các vai trò trong hệ thống
+enum Role {
+  USER
+  ADMIN
+}
+
+// Bảng lưu trữ thông tin người dùng
+model User {
+  id        Int       @id @default(autoincrement())
+  email     String    @unique                  
+  password  String                            
+  name      String?                           
+  role      Role      @default(USER)           
+  createdAt DateTime  @default(now())          
+  updatedAt DateTime  @updatedAt               
+  sessions  Session[] // 🔴 Thêm dòng này để khai báo một user có nhiều phiên đăng nhập
+}
+
+// Bảng quản lý phiên đăng nhập và Refresh Token
+model Session {
+  id        Int      @id @default(autoincrement())
+  token     String   @unique                  // Lưu chuỗi Refresh Token
+  userId    Int                               // ID của người dùng sở hữu phiên này
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade) // Tự động xóa session nếu user bị xóa
+  userAgent String?                           // Lưu thông tin trình duyệt/thiết bị để quản lý
+  expiresAt DateTime                          // Ngày hết hạn của Refresh Token này
+  createdAt DateTime @default(now())
+}
