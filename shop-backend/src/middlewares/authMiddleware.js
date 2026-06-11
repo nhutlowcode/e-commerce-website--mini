@@ -13,10 +13,10 @@ export const protectRoutes = async (req, res, next) => {
         jwt.verify(token, process.env.JWT_SECRET, async (err, decoded) => {
             if (err) {
                 console.error("Có lỗi khi xác thực: ", err)
-                return res.status(500).json({ message: 'accessToken không hợp lệ hoặc đã hết hạn!'})
+                return res.status(401).json({ message: 'accessToken không hợp lệ hoặc đã hết hạn!'})
             }
 
-            const user = await prisma.user.findUnique({
+            const user = await prisma.user.findUnique({                                        
                 where: {
                     id: decoded.id
                 }
@@ -44,4 +44,38 @@ export const isAdmin = async (req, res, next) => {
         } else {
             return res.status().json({ message: 'Từ chối truy cập, chỉ admin mới được quyền truy cập!'})
         }
+}
+
+export const optionalAuth = async (req, res, next) => {
+    try {
+        const authHeader = req.headers['Authorization']
+        const token = authHeader && authHeader.split(' ')[1]
+
+        if (!token) {
+           return next()
+        }
+
+        jwt.verify(token, process.env.JWT_SECRET, async (err, decoded) => {
+            if (err) {
+                res.status(401).json({ message: 'accessToken không hợp lệ hoặc đã hết hạn!'})
+            }
+
+            const user = await prisma.user.findUnique({
+                where: {
+                    id: decoded.id
+                }
+            })
+
+            if (user) {
+                const { password: _, userWithoutPassword } = user
+                req.user = userWithoutPassword
+            }
+
+            next()
+        })
+
+    } catch (error) {
+        console.log('Lỗi ở optionalAuth', error)
+        res.status(500).json({ message: 'Lỗi hệ thống!'})
+    }
 }

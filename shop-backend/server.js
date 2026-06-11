@@ -3,6 +3,7 @@ import express from 'express'
 import cors from 'cors'
 import productRoutes from './src/routes/productRoutes.js'
 import authRoutes from './src/routes/authRoutes.js'
+import orderRoutes from './src/routes/orderRoutes.js'
 import cookieParser from 'cookie-parser'
 
 // Khởi tạo các công cụ
@@ -20,6 +21,7 @@ app.use(cookieParser())
 // đăng ký các route
 app.use('/api/products', productRoutes)
 app.use('/api/auth', authRoutes)
+app.use('/api/orders', orderRoutes)
 
 app.listen(PORT, () => {
     console.log(`🚀 Server đang chạy tại http://localhost:${PORT}`) 

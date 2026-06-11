@@ -12,7 +12,11 @@ model Product {
   description String
   price       Int
   image       String
+  stock       Int         @default(0) // 👉 THÊM DÒNG NÀY (Mặc định kho = 0)
   createdAt   DateTime @default(now())
+
+  // 👉 THÊM ĐÚNG DÒNG NÀY VÀO CUỐI MODEL PRODUCT:
+  orderItems  OrderItem[]
 }
 
 // Định nghĩa các vai trò trong hệ thống
@@ -31,6 +35,9 @@ model User {
   createdAt DateTime  @default(now())          
   updatedAt DateTime  @updatedAt               
   sessions  Session[] // 🔴 Thêm dòng này để khai báo một user có nhiều phiên đăng nhập
+
+  // 👉 THÊM ĐÚNG DÒNG NÀY VÀO CUỐI MODEL USER:
+  orders    Order[]
 }
 
 // Bảng quản lý phiên đăng nhập và Refresh Token
@@ -42,4 +49,45 @@ model Session {
   userAgent String?                           // Lưu thông tin trình duyệt/thiết bị để quản lý
   expiresAt DateTime                          // Ngày hết hạn của Refresh Token này
   createdAt DateTime @default(now())
+}
+
+// 1. Định nghĩa các trạng thái của đơn hàng
+enum OrderStatus {
+  PENDING     // Chờ thanh toán / Chờ xử lý
+  PAID        // Đã thanh toán trực tuyến thành công
+  SHIPPING    // Đang giao hàng
+  DELIVERED   // Đã giao thành công
+  CANCELLED   // Đã hủy đơn
+}
+
+// 2. Bảng Đơn hàng tổng
+model Order {
+  id          String      @id @default(uuid()) // Giữ String UUID để mã đơn hàng phức tạp, bảo mật hơn số tăng dần
+  userId      Int?        // Đổi thành Int? để khớp với User.id (để trống nếu khách không đăng nhập)
+  user        User?       @relation(fields: [userId], references: [id])
+  
+  name        String      // Tên người nhận hàng
+  phone       String      // Số điện thoại nhận hàng
+  address     String      // Địa chỉ giao hàng
+  
+  totalAmount Int         // Đổi thành Int để khớp với Product.price
+  status      OrderStatus @default(PENDING)
+  
+  createdAt   DateTime    @default(now())
+  updatedAt   DateTime    @updatedAt
+
+  items       OrderItem[]
+}
+
+// 3. Bảng Chi tiết từng món hàng trong đơn
+model OrderItem {
+  id        Int      @id @default(autoincrement()) // Dùng Int tăng dần cho gọn
+  orderId   String
+  order     Order    @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  
+  productId Int      // Đổi thành Int để khớp với Product.id
+  product   Product  @relation(fields: [productId], references: [id])
+  
+  quantity  Int      // Số lượng mua
+  price     Int      // Đổi thành Int để khớp với Product.price (Lưu giá tại thời điểm mua)
 }
