@@ -66,9 +66,9 @@ export const login = async (req, res) => {
          }
          const accessToken = jwt.sign(
             { 
-            id: existedUser.id,
-            role: existedUser.role
-             }
+                id: existedUser.id,
+                role: existedUser.role
+            }
           , process.env.JWT_SECRET, 
           { expiresIn: ACCESS_TOKEN_TTL })
 
@@ -133,14 +133,14 @@ export const refreshToken = async (req, res) => {
 
         const newAccessToken = jwt.sign(
             {
-                user: session.user.id,
+                id: session.user.id,
                 role: session.user.role
             },
             process.env.JWT_SECRET,
             { expiresIn: '15m'}
         )
 
-        res.status().json({
+        res.status(200).json({
             accessToken: newAccessToken
         })
     } catch (error) {

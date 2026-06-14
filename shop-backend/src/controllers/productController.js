@@ -3,7 +3,30 @@ import prisma from '../config/db.js'
 // 1. lấy danh sách sản phẩm
 export const getProducts = async (req, res) => {
     try {
-        const products = await prisma.product.findMany()
+        const { keyword, minPrice, maxPrice } = req.query
+        const whereClause = {}
+
+        // nếu có nhập từ khóa thì lọc ra những sản phẩm mà tên chứa từ khóa đó
+        if (keyword) {
+            whereClause.name = {
+                // contains là thuộc tính của prisma, đặt key như vậy để khi đưa vào prisma thì nó nhận được
+                contains: keyword,
+                mode: 'insensitive'
+            }
+        }
+
+        if (minPrice || maxPrice) {
+            whereClause.price = {}
+            if (minPrice)  whereClause.price.gte = parseInt(minPrice)
+            if (maxPrice)  whereClause.price.lte = parseInt(minPrice)
+        }
+
+        const products = await prisma.product.findMany({
+            where: whereClause,
+            orderBy: {
+                createdAt: 'desc'
+            }
+        })
         res.status(200).json(products)
     } catch (error) {
         console.error('Lỗi Prisma: ', error)
