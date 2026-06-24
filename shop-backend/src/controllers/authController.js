@@ -2,9 +2,14 @@ import prisma from '../config/db.js'
 import jwt from 'jsonwebtoken'
 import crypto from 'crypto'
 import bcrypt from 'bcryptjs'
+import { sendEmail } from '../utils/sendEmail.js'
 
 const ACCESS_TOKEN_TTL = '1d'
 const REFRESH_TOKEN_TTL = 7 * 24 * 60 * 60 * 1000
+
+// test 
+// const ACCESS_TOKEN_TTL = '5s'
+// const REFRESH_TOKEN_TTL = 10 * 1000
 
 
 export const register = async (req, res) => {
@@ -148,3 +153,54 @@ export const refreshToken = async (req, res) => {
         res.status(500).json({ message: 'Lỗi hệ thống khi gia hạn token' })
     }
 }
+
+export const forgotPassword = async (req, res) => {
+    try {
+        const { email } = req.body
+        if (!email) {
+            return res.status(400).json({ message: 'Vui lòng cung cấp email đã đăng ký!'})
+        }
+
+        const user = await prisma.user.findUnique({ where: { email } })
+
+        if (!user) {
+            return res.status(404).json({ message: 'Email này chưa được đăng ký!'})
+        }
+
+        const resetToken = crypto.randomBytes(64).toString('hex')
+
+        const resetPasswordExpires = new Date(Date.now() + 15 * 60 * 1000 ) // token hết hạn sau 15p
+
+        await prisma.user.update({
+            where: { id: user.id },
+            data: {
+                resetPasswordToken: resetToken,
+                resetPasswordExpires: resetPasswordExpires
+            }
+        })
+
+        const resetLink = `http://localhost:5173/reset-password?token=${resetToken}`
+
+        const htmlContent = `
+            <h3>Xin chào ${user.name || 'bạn'},</h3>
+            <p>Bạn vừa yêu cầu đặt lại mật khẩu tại Minh Nhut Shop. Vui lòng bấm vào nút dưới đây để đổi mật khẩu mới (Link có hiệu lực trong 15 phút):</p>
+            <a href="${resetLink}" style="display: inline-block; padding: 10px 20px; background-color: #3b82f6; color: white; text-decoration: none; border-radius: 5px; font-weight: bold;">Đổi Mật Khẩu</a>
+            <p>Nếu bạn không yêu cầu, vui lòng bỏ qua email này.</p>
+        `
+        await sendEmail({ to: user.email, subject: `Link Reset Password`, html: htmlContent})
+        res.status(200).json({ message: 'Link khôi phục tài khoản đã được gửi vào email của bạn'})
+    } catch (error) {
+        console.error("Lỗi ở forgotPassword ", error)
+        res.status(500).json({ message: 'Lỗi hệ thống khi yêu cầu quên mật khẩu.'})
+    }
+}
+
+
+const user = await prisma.user.findUInique({
+    where: {
+        resetPasswordToken: token,
+        resetPasswordExpires: {
+            gt: Date.now()
+        }
+    }
+})

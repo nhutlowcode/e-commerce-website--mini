@@ -18,7 +18,7 @@ export const getProducts = async (req, res) => {
         if (minPrice || maxPrice) {
             whereClause.price = {}
             if (minPrice)  whereClause.price.gte = parseInt(minPrice)
-            if (maxPrice)  whereClause.price.lte = parseInt(minPrice)
+            if (maxPrice)  whereClause.price.lte = parseInt(maxPrice)
         }
 
         const products = await prisma.product.findMany({
@@ -27,6 +27,7 @@ export const getProducts = async (req, res) => {
                 createdAt: 'desc'
             }
         })
+
         res.status(200).json(products)
     } catch (error) {
         console.error('Lỗi Prisma: ', error)
@@ -43,9 +44,11 @@ export const getProductById = async (req, res) => {
                 id: parseInt(productId)
             }
         })
+
         if (!product) {
             res.status(404).json({ message: 'Không tìm thấy sản phẩm' })
         }
+
         res.status(200).json(product)
     } catch (error) {
         console.error('Lỗi Prisma: ', error)
@@ -56,9 +59,12 @@ export const getProductById = async (req, res) => {
 // 3. Thêm 1 sản phẩm mới
 export const createProduct = async(req, res) => {
     try {
-        const { name, description, price, image } = req.body
+        const { name, description, price } = req.body
 
-        if (!name || !description || !price || !image) {
+        // lấy đường link ảnh do multer và cloudinary trả về qua req.file.path
+        const imageUrl = req.file ? req.file.path : ''
+
+        if (!name || !description || !price || !imageUrl) {
             alert('Phải điền đẩy đủ thông tin sản phẩm')
         }
         const newProduct = await prisma.product.create({
@@ -66,7 +72,7 @@ export const createProduct = async(req, res) => {
                 name,
                 description,
                 price: parseInt(price),
-                image
+                image: imageUrl
 
             }
         })
@@ -96,18 +102,25 @@ export const deleteProduct = async (req, res) => {
 // 5. Sửa 1 sản phẩm 
 export const updateProduct = async (req, res) => {
     try {
-        const productId = req.params.id
-        const { name, description, price, image } = req.body
+        const productId = parseInt(req.params.id)
+        const { name, description, price } = req.body
+
+        const updateData = {
+            name: name,
+            description: description,
+            price: parseInt(price)
+        }
+
+        // kiểm tra xem admin có gửi ảnh mới lên không
+        if (req.file) {
+            updateData.image = req.file.path
+        }
+
         const upadateProduct = await prisma.product.update({
             where: {
                 id: productId
             },
-            data: {
-                name: name,
-                description: description,
-                price: parseInt(price),
-                image: image
-            }
+            data: updateData
         })
         res.status(200).json(upadateProduct)
     } catch (error) {

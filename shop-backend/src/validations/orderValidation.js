@@ -25,30 +25,42 @@ const orderSchema = Joi.object({
             id: Joi.number().integer().required(), // Đảm bảo ID là số nguyên (cho Prisma)
             quantity: Joi.number().integer().min(1).required(), // Số lượng bèo nhất là 1
             price: Joi.number().optional() // Ta không xài price này, nhưng cho phép Frontend gửi lên mà không báo lỗi
-        })
+        }).unknown(true)
     ).min(1).required().messages({
         'array.min': 'Giỏ hàng phải có ít nhất 1 sản phẩm.',
         'any.required': 'Thiếu dữ liệu giỏ hàng.'
     }),
 
-    totalAmount: Joi.number().optional() 
+    totalAmount: Joi.number().optional(),
+    paymentMethod: Joi.string().valid('COD', 'ZALOPAY').required().messages({
+        'any.only': 'Phương thức thanh toán không hợp lệ, chỉ chấp nhận COD hoặc ZALOPAY.',
+        'any.required': 'Vui lòng chọn phương thức thanh toán.',
+        'string.empty': 'Phương thức thanh toán không được để trống.'
+    })
 }) 
 
 // 2. Tạo Middleware gác cổng
 export const validateOrder = (req, res, next) => {
+    // console.log("BODY FRONTEND GỬI LÊN:", req.body)
+
     // Kiểm tra req.body đối chiếu với bộ luật ở trên
     // abortEarly: false giúp Joi kiểm tra hết toàn bộ các lỗi rồi mới báo cáo 1 thể, thay vì thấy 1 lỗi là dừng luôn
-    const { error } = orderSchema.validate(req.body, { abortEarly: false }) 
+    const { error } = orderSchema.validate(req.body, {
+    abortEarly: false
+    })
 
     if (error) {
-        // Gom tất cả các câu báo lỗi lại thành một mảng và trả về cho Frontend
-        const errorMessages = error.details.map(detail => detail.message) 
-        return res.status(400).json({ 
-            message: 'Dữ liệu đầu vào không hợp lệ!', 
-            errors: errorMessages 
-        }) 
+        console.log(error.details)
+
+        const errorMessages = error.details.map(
+            detail => detail.message
+        )
+
+        return res.status(400).json({
+            message: 'Dữ liệu đầu vào không hợp lệ!',
+            errors: errorMessages
+        })
     }
 
-    // Nếu dữ liệu sạch sẽ, cho phép đi tiếp vào Controller
     next()
 } 

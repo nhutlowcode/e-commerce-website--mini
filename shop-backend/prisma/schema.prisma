@@ -17,6 +17,7 @@ model Product {
 
   // 👉 THÊM ĐÚNG DÒNG NÀY VÀO CUỐI MODEL PRODUCT:
   orderItems  OrderItem[]
+  cartItems CartItem[]
 }
 
 // Định nghĩa các vai trò trong hệ thống
@@ -26,18 +27,26 @@ enum Role {
 }
 
 // Bảng lưu trữ thông tin người dùng
+// Bảng lưu trữ thông tin người dùng
 model User {
-  id        Int       @id @default(autoincrement())
-  email     String    @unique                  
-  password  String                            
-  name      String?                           
-  role      Role      @default(USER)           
-  createdAt DateTime  @default(now())          
-  updatedAt DateTime  @updatedAt               
-  sessions  Session[] // 🔴 Thêm dòng này để khai báo một user có nhiều phiên đăng nhập
+  id                  Int       @id @default(autoincrement())
+  email               String    @unique                  
+  password            String?   // 🔴 Thêm dấu ? (Bắt buộc cho Google Login)                 
+  name                String?                             
+  avatar              String?   // 🔴 Thêm cột này để hứng ảnh từ Google
+  authProvider        String    @default("local") // 🔴 Phân biệt 'local' hay 'google'
+  
+  // 🔴 2 Cột phục vụ cho tính năng Quên mật khẩu
+  resetPasswordToken  String?   // Lưu mã xác nhận
+  resetPasswordExpires DateTime? // Lưu thời gian hết hạn của mã
 
-  // 👉 THÊM ĐÚNG DÒNG NÀY VÀO CUỐI MODEL USER:
-  orders    Order[]
+  role                Role      @default(USER)           
+  createdAt           DateTime  @default(now())          
+  updatedAt           DateTime  @updatedAt               
+  sessions            Session[] 
+
+  orders              Order[]
+  cart                Cart?
 }
 
 // Bảng quản lý phiên đăng nhập và Refresh Token
@@ -90,4 +99,34 @@ model OrderItem {
   
   quantity  Int      // Số lượng mua
   price     Int      // Đổi thành Int để khớp với Product.price (Lưu giá tại thời điểm mua)
+}
+
+// 👉 1. BẢNG CART (Đại diện cho cái giỏ của mỗi User)
+model Cart {
+  id        Int        @id @default(autoincrement())
+  
+  // Ràng buộc @unique đảm bảo 1 tài khoản chỉ có ĐÚNG 1 cái giỏ hàng tồn tại song song
+  userId    Int        @unique 
+  user      User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  items     CartItem[]
+  createdAt DateTime   @default(now())
+  updatedAt DateTime   @updatedAt
+}
+
+// 👉 2. BẢNG CART ITEM (Chi tiết từng món trong giỏ)
+model CartItem {
+  id        Int      @id @default(autoincrement())
+  
+  cartId    Int
+  cart      Cart     @relation(fields: [cartId], references: [id], onDelete: Cascade)
+  
+  productId Int
+  product   Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
+  
+  quantity  Int      @default(1) // Mặc định thêm vào giỏ là 1 cái
+
+  // CÚ CHỐT BẢO MẬT: Đảm bảo trong 1 giỏ hàng, 1 mã sản phẩm chỉ xuất hiện 1 dòng duy nhất.
+  // Nếu khách bấm thêm món đó lần 2, hệ thống sẽ tự động bắt lỗi và báo cho Backend biết để "Cộng dồn số lượng" thay vì đẻ ra dòng mới.
+  @@unique([cartId, productId]) 
 }
