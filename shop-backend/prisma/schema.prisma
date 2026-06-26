@@ -6,18 +6,29 @@ datasource db {
   provider = "postgresql"
 }
 
+// 👉 Thêm bảng danh mục độc lập
+model Category {
+  id       Int       @id @default(autoincrement())
+  name     String    @unique
+  
+  products Product[] // Một danh mục có nhiều sản phẩm
+}
+
 model Product {
   id          Int      @id @default(autoincrement())
   name        String
   description String
   price       Int
   image       String
-  stock       Int         @default(0) // 👉 THÊM DÒNG NÀY (Mặc định kho = 0)
+  stock       Int      @default(0) 
   createdAt   DateTime @default(now())
 
-  // 👉 THÊM ĐÚNG DÒNG NÀY VÀO CUỐI MODEL PRODUCT:
+  // 👉 THÊM 2 DÒNG NÀY ĐỂ KẾT NỐI VỚI BẢNG CATEGORY
+  categoryId  Int
+  category    Category @relation(fields: [categoryId], references: [id])
+
   orderItems  OrderItem[]
-  cartItems CartItem[]
+  cartItems   CartItem[]
 }
 
 // Định nghĩa các vai trò trong hệ thống

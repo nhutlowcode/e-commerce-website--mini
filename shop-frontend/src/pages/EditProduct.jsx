@@ -5,11 +5,14 @@ import axiosInstance from '../utils/axiosConfig.js'
 function EditProduct() {
   const { id } = useParams()  // Lấy ID từ trên URL
   const navigate = useNavigate() 
-  
+  const [categories, setCategories] = useState([])
+   
   const [formData, setFormData] = useState({
     name: '',
     description: '',
-    price: ''
+    price: '',
+    stock: '',
+    categoryId: ''
   })
   const [imageFile, setImageFile] = useState(null)
   const [preview, setPreview] = useState(null)
@@ -22,7 +25,9 @@ function EditProduct() {
         setFormData({
           name: res.data.name,
           description: res.data.description,
-          price: res.data.price
+          price: res.data.price,
+          stock: res.data.stock,
+          categoryId: res.data.categoryId
         })
         setPreview(res.data.image)
         setLoading(false) 
@@ -33,6 +38,15 @@ function EditProduct() {
         navigate('/admin/products') 
       }) 
   }, [id, navigate]) 
+
+  useEffect(() => {
+        axiosInstance.get('/api/category')
+            .then((res) => {
+                setCategories(res.data)
+            })
+            .catch(err => console.error("Lỗi tải danh mục:", err))
+
+    }, [])
 
   const handleChange = (e) => {
     const { name, value } = e.target 
@@ -56,6 +70,8 @@ function EditProduct() {
     data.append('name', formData.name)
     data.append('price', formData.price)
     data.append('description', formData.description)
+    data.append('stock', formData.stock)
+    data.append('categoryId', formData.categoryId)
 
     // chỉ đính kèm ảnh khi có ảnh mới được chọn
     if (imageFile) {
@@ -90,6 +106,38 @@ function EditProduct() {
           <label className="block text-gray-700 font-medium mb-2">Tên sản phẩm</label>
           <input type="text" name="name" value={formData.name} onChange={handleChange} required className="w-full px-4 py-3 border border-gray-300 rounded-lg" />
         </div>
+
+        {/* Ô chọn Danh mục */}
+            <div>
+                <label className="block text-gray-700 font-medium mb-2">Danh mục sản phẩm</label>
+                <select 
+                    name="categoryId" 
+                    value={formData.categoryId} 
+                    onChange={handleChange} 
+                    required 
+                    className="w-full px-4 py-3 border border-gray-300 rounded-lg bg-white"
+                >
+                    {categories.map((cat) => (
+                        <option key={cat.id} value={cat.id}>
+                            {cat.name}
+                        </option>
+                    ))}
+                </select>
+            </div>
+
+            {/* Ô nhập Số lượng Tồn kho */}
+            <div>
+                <label className="block text-gray-700 font-medium mb-2">Số lượng Tồn kho</label>
+                <input 
+                    type="number" 
+                    name="stock" 
+                    value={formData.stock} 
+                    min={0} 
+                    onChange={handleChange} 
+                    required 
+                    className="w-full px-4 py-3 border border-gray-300 rounded-lg" 
+                />
+            </div>
 
         <div>
           <label className="block text-gray-700 font-medium mb-2">Giá bán (VNĐ)</label>

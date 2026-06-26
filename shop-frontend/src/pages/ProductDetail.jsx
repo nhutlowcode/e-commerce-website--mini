@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react'
 import { useParams, Link } from 'react-router-dom'
 import { useDispatch } from 'react-redux'
 import { addToCartAction } from '../redux/cartSlice.js'
+import axiosInstance from '../utils/axiosConfig.js'
 
 function ProductDetail() {
 
@@ -14,20 +15,15 @@ function ProductDetail() {
     const [loading, setLoading] = useState(true)
     const [error, setError] = useState(null)
 
-    useEffect(() => {
-        fetch(`http://localhost:5000/api/products/${id}`)
+   useEffect(() => {
+        axiosInstance.get(`/api/products/${id}`)
             .then((res) => {
-                if (!res.ok) {
-                    throw new Error('Không tìm thấy sản phẩm này!')
-                }
-                return res.json()
-            })
-            .then((data) => {
-                setProduct(data)
+                setProduct(res.data)
                 setLoading(false)
             })
-            .catch((error) => {
-                setError(error)
+            .catch((err) => {
+                // Xử lý lỗi chuẩn xác, an toàn cho React
+                setError(err.response?.data?.message || 'Không thể tải thông tin sản phẩm!')
                 setLoading(false)
             })
     }, [id])
@@ -48,13 +44,23 @@ function ProductDetail() {
                 <img 
                     src={product.image}
                     alt={product.name}
-                    className='w-full max-h-[500px] object-contain'
+                    className='w-full max-h-125 object-contain'
                 />
             </div>
 
             {/* Cột phải: thông tin */}
             <div className='flex flex-col justify-center'>
                 <h1 className='text-4xl font-bold text-gray-800 mb-4'>{product.name}</h1>
+                {/* THÊM KHỐI NÀY: Hiển thị Danh mục và Số lượng */}
+                <div className='flex items-center gap-4 mb-4 text-sm font-medium'>
+                    <span className='bg-gray-100 text-gray-600 px-3 py-1 rounded-full'>
+                        {/* Dùng optional chaining (?) để đề phòng lỗi nếu category bị null */}
+                        Danh mục: {product.category?.name || 'Chưa phân loại'}
+                    </span>
+                    <span className={`${product.stock > 0 ? 'text-green-600' : 'text-red-500'}`}>
+                        {product.stock > 0 ? `Còn hàng (${product.stock} sản phẩm)` : 'Đã hết hàng'}
+                    </span>
+                </div>
                 <p className='text-3xl text-blue-600 font-semibold mb-6'>
                     {product.price.toLocaleString('vi-VN')} đ
                 </p>

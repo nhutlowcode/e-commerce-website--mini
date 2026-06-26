@@ -1,18 +1,33 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import axiosInstance from '../utils/axiosConfig.js'
 
 function AddProduct() {
     const navigate = useNavigate()
 
+    const [categories, setCategories] = useState([])
     const [imageFile, setImageFile] = useState(null)
     const [preview, setPreview] = useState(null)
 
     const [formData, setFormData] = useState({
         name: '',
         description: '',
-        price: ''
+        price: '',
+        stock: '',
+        categoryId: ''
     })
+
+    useEffect(() => {
+        axiosInstance.get('/api/category')
+            .then((res) => {
+                setCategories(res.data)
+                if (res.data.length > 0) {
+                    setFormData(prev => ({...prev, categoryId: res.data[0].id}))
+                }
+            })
+            .catch(err => console.error("Lỗi tải danh mục:", err))
+
+    }, [])
 
     const handleChange = (e) => {
         const { name, value } = e.target // lấy ra 2 field từ sự kiện đang thao tác
@@ -40,7 +55,9 @@ function AddProduct() {
         data.append('name', formData.name)
         data.append('price', formData.price)
         data.append('description', formData.description)
-        data.append('image', formData.image) // chữ image phải khớp với 'mật khẩu image' bên uploadMiddleware
+        data.append('stock', formData.stock) // Gửi thêm stock
+        data.append('categoryId', formData.categoryId) //  Gửi thêm categoryId
+        data.append('image', imageFile) // chữ image phải khớp với 'mật khẩu image' bên uploadMiddleware
 
         try {
             await axiosInstance.post('/api/products', data, {
@@ -66,6 +83,38 @@ function AddProduct() {
             <div>
                 <label className='block text-gray-700 font-medium mb-2'>Tên sản phẩm</label>
                 <input type="text" name='name' value={formData.name} onChange={handleChange} required className='w-full px-4 py-3 border border-gray-300 rounded-lg' />
+            </div>
+            
+            {/* Ô chọn Danh mục */}
+            <div>
+                <label className="block text-gray-700 font-medium mb-2">Danh mục sản phẩm</label>
+                <select 
+                    name="categoryId" 
+                    value={formData.categoryId} 
+                    onChange={handleChange} 
+                    required 
+                    className="w-full px-4 py-3 border border-gray-300 rounded-lg bg-white"
+                >
+                    {categories.map((cat) => (
+                        <option key={cat.id} value={cat.id}>
+                            {cat.name}
+                        </option>
+                    ))}
+                </select>
+            </div>
+
+            {/* Ô nhập Số lượng Tồn kho */}
+            <div>
+                <label className="block text-gray-700 font-medium mb-2">Số lượng Tồn kho</label>
+                <input 
+                    type="number" 
+                    name="stock" 
+                    value={formData.stock} 
+                    min={0} 
+                    onChange={handleChange} 
+                    required 
+                    className="w-full px-4 py-3 border border-gray-300 rounded-lg" 
+                />
             </div>
 
             <div>

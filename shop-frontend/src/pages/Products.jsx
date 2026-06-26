@@ -6,6 +6,9 @@ function Products({ handleAddtoCart }) {
   const [products, setProducts] = useState([]) 
   const [loading, setLoading] = useState(true)
 
+  const [currentPage, setCurrentPage] = useState(1)
+  const [totalPages, setTotalPages] = useState(1)
+
   // state cho tim kiếm và lock
   const [keyword, setKeyword] = useState('')
   const [minPrice, setMinPrice] = useState('')
@@ -21,7 +24,9 @@ function Products({ handleAddtoCart }) {
 
     axiosInstance.get(url)
     .then(res => {
-      setProducts(res.data)
+      setProducts(res.data.products)
+      setTotalPages(res.data.pagination.totalPages)
+      setCurrentPage(res.data.pagination.currentPage)
       setLoading(false)
     })
     .catch(err => {
@@ -38,12 +43,21 @@ function Products({ handleAddtoCart }) {
   const handleFilterSubmit = (e) => {
     e.preventDefault()
 
-    const params = {}
+    const params = { page: 1 }
     if (keyword) params.keyword = keyword
     if (minPrice) params.minPrice = minPrice
     if (maxPrice) params.maxPrice = maxPrice
 
     fetchProducts(params)
+  }
+
+  const handlePageChange = (newPage) => {
+    if (newPage < 1 || newPage > totalPages) return;
+    const params = { page: newPage };
+    if (keyword) params.keyword = keyword;
+    if (minPrice) params.minPrice = minPrice;
+    if (maxPrice) params.maxPrice = maxPrice;
+    fetchProducts(params);
   }
 
   const handleClearFilter = () => {
@@ -144,8 +158,36 @@ function Products({ handleAddtoCart }) {
                         Không tìm thấy sản phẩm nào.
                     </p>
                 )}
-            </div>
+            </div>  
         )}
+        {/* 👉 Khu vực Phân trang */}
+            {totalPages > 1 && (
+                <div className="flex justify-center items-center gap-2 mt-8">
+                    <button 
+                        onClick={() => handlePageChange(currentPage - 1)}
+                        disabled={currentPage === 1}
+                        className={`px-4 py-2 rounded-lg font-medium transition-colors ${
+                            currentPage === 1 ? 'bg-gray-100 text-gray-400 cursor-not-allowed' : 'bg-white border border-gray-300 text-gray-700 hover:bg-gray-50'
+                        }`}
+                    >
+                        Trang trước
+                    </button>
+                    
+                    <span className="text-gray-700 font-medium px-4">
+                        {currentPage} / {totalPages}
+                    </span>
+
+                    <button 
+                        onClick={() => handlePageChange(currentPage + 1)}
+                        disabled={currentPage === totalPages}
+                        className={`px-4 py-2 rounded-lg font-medium transition-colors ${
+                            currentPage === totalPages ? 'bg-gray-100 text-gray-400 cursor-not-allowed' : 'bg-white border border-gray-300 text-gray-700 hover:bg-gray-50'
+                        }`}
+                    >
+                        Trang sau
+                    </button>
+                </div>
+            )}
       </main>
 
     </div>

@@ -1,6 +1,5 @@
+import { GoogleOAuthProvider } from '@react-oauth/google'
 import { BrowserRouter, Routes, Route } from 'react-router-dom' 
-import Footer from './components/Footer'
-import Navbar from './components/Navbar'
 import Home from './pages/Home'
 import Cart from './pages/Cart' 
 import ProductDetail from './pages/ProductDetail' 
@@ -14,40 +13,49 @@ import Checkout from './pages/Checkout'
 import AdminOrders from './pages/AdminOrders'
 import OrderHistory from './pages/OrderHistory'
 import AdminDashboard from './pages/AdminDashboard'
+import ForgotPassword from './pages/ForgotPassword'
+import ResetPassword from './pages/ResetPassword'
+import ClientLayout from './components/ClientLayout' 
+import AdminLayout from './components/AdminLayout'
+import AdminCategories from './pages/AdminCategories'
 
 function App() {
   return (
-    <BrowserRouter>
-      <div className="min-h-screen bg-gray-50">
-        
-        {/* Navbar giờ sẽ tự hút số lượng giỏ hàng từ Redux, không cần truyền props */}
-        <Navbar />
+    <GoogleOAuthProvider clientId='1003415528694-iq40cee3dr6ke68c6p4almh096d18i3b.apps.googleusercontent.com'>
+      <BrowserRouter>
+        {/* Đã xóa <div className="...">, <Navbar /> và <Footer /> ở đây */}
+          <Routes>
+            
+            {/* NHÓM 1: CÁC TRANG CỦA KHÁCH HÀNG (Sẽ có Navbar và Footer) */}
+            <Route element={<ClientLayout />}>
+                <Route path='/' element={<Home />}/>
+                <Route path='/products' element={<Products />}/>
+                <Route path='/product/:id' element={<ProductDetail />}/>
+                <Route path='/cart' element={<Cart />}/>
+                <Route path='/checkout' element={<Checkout />}/>
+                <Route path='/order-history' element={<OrderHistory />}/>
+            </Route>
 
-        <Routes>
-          <Route path='/login' element={<Login />}/>
-          <Route path='/register' element={<Register />}/>
+            {/* NHÓM 2: CÁC TRANG AUTH (Không cần Navbar/Footer cũng được, tùy bạn cấu hình. Ở đây mình cho nó đứng độc lập) */}
+            <Route path='/login' element={<Login />}/>
+            <Route path='/register' element={<Register />}/>
+            <Route path='/forgot-password' element={<ForgotPassword />} />
+            <Route path='/reset-password' element={<ResetPassword />} />
 
-          {/* Xóa toàn bộ prop handleAddtoCart lằng nhằng ở các Route */}
-          <Route path='/' element={<Home />}/>
-          <Route path='/products' element={<Products />}/>
-          <Route path='/product/:id' element={<ProductDetail />}/>
-          
-          <Route path='/cart' element={<Cart />}/>
-          <Route path='/checkout' element={<Checkout />}/>
+            {/* NHÓM 3: CÁC TRANG ADMIN (Sẽ có Sidebar màu đen chuyên nghiệp) */}
+            {/* Lưu ý: Các path con bên trong không cần chữ /admin nữa vì đã được bọc ở thẻ cha */}
+            <Route path='/admin' element={<AdminLayout />}>
+                <Route path='dashboard' element={<AdminDashboard />} />
+                <Route path='products' element={<AdminProducts />} />
+                <Route path='orders' element={<AdminOrders />} />
+                <Route path='categories' element={<AdminCategories />} />
+                <Route path='products/new' element={<AddProduct />} />
+                <Route path='products/edit/:id' element={<EditProduct />} />
+            </Route>
 
-          
-          <Route path='/order-history' element={<OrderHistory />}/>
-          
-          <Route path='/admin/dashboard' element={<AdminDashboard />} />
-          <Route path='/admin/products' element={<AdminProducts />} />
-          <Route path='/admin/orders' element={<AdminOrders />} />
-          <Route path='/admin/products/new' element={<AddProduct />} />
-          <Route path='/admin/products/edit/:id' element={<EditProduct />} />
-        </Routes>
-        
-        <Footer/>
-      </div>
-    </BrowserRouter>
+          </Routes>
+      </BrowserRouter>
+    </GoogleOAuthProvider>
   ) 
 }
 

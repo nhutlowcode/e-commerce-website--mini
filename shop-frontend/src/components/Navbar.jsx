@@ -1,6 +1,7 @@
 import { Link, useNavigate } from 'react-router-dom'
 import { useDispatch, useSelector } from 'react-redux'
-import { logout } from '../redux/authSlice'
+import { logout } from '../redux/authSlice.js'
+import { clearCart } from '../redux/cartSlice.js'
 
 function Navbar() {
 
@@ -12,6 +13,7 @@ function Navbar() {
 
     const handleLogOut = () => {
         dispatch(logout())
+        dispatch(clearCart())
         navigate('/')
     }
 
@@ -34,12 +36,14 @@ function Navbar() {
                 <Link to='/products' className='text-gray-600 hover:text-blue-600 font-medium transition'>
                     Sản phẩm
                 </Link>
-                <Link to='/contact' className='text-gray-600 hover:text-blue-600 font-medium transition'>
-                    Liên hệ
-                </Link>
                 <Link to='/order-history' className='text-gray-600 hover:text-blue-600 font-medium transition'>
                     Đơn hàng
                 </Link>
+                {user.role === 'ADMIN' && (
+                    <Link to='/admin/dashboard' className='text-gray-600 hover:text-blue-600 font-medium transition'>
+                    Vào trang quản trị
+                </Link>
+                )}
             </div>
 
             <div className='flex items-center gap-4'>

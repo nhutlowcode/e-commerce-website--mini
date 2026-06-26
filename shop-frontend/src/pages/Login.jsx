@@ -1,17 +1,18 @@
+import { GoogleLogin } from '@react-oauth/google'
 import { useState } from 'react'
 import axiosInstance from '../utils/axiosConfig.js'
 import { useDispatch, useSelector } from 'react-redux'
 import { loginSuccess } from '../redux/authSlice.js'
-import { useNavigate, Link } from 'react-router-dom'; // 👉 Thêm Link để chuyển hướng trang Đăng ký
+import { useNavigate, Link } from 'react-router-dom'   // 👉 Thêm Link để chuyển hướng trang Đăng ký
 import { clearCart } from '../redux/cartSlice.js'
 
 const Login = () => {
     // Khởi tạo state lưu trữ dữ liệu người dùng nhập
-    const [email, setEmail] = useState('');
-    const [password, setPassword] = useState('');
-    const [errorMsg, setErrorMsg] = useState('');
-    const [successMsg, setSuccessMsg] = useState('');
-    const [isLoading, setIsLoading] = useState(false); // 👉 Thêm state khóa nút
+    const [email, setEmail] = useState('')  
+    const [password, setPassword] = useState('')  
+    const [errorMsg, setErrorMsg] = useState('')  
+    const [successMsg, setSuccessMsg] = useState('')  
+    const [isLoading, setIsLoading] = useState(false)   // 👉 Thêm state khóa nút
 
     const dispatch = useDispatch()
     const navigate = useNavigate()
@@ -20,10 +21,10 @@ const Login = () => {
 
     // Hàm xử lý khi người dùng bấm nút Đăng nhập
     const handleLogin = async (e) => {
-        e.preventDefault(); 
-        setErrorMsg(''); 
-        setSuccessMsg('');
-        setIsLoading(true); // Khóa nút khi bắt đầu gọi API
+        e.preventDefault()   
+        setErrorMsg('')   
+        setSuccessMsg('')  
+        setIsLoading(true)   // Khóa nút khi bắt đầu gọi API
 
          try {
             const response = await axiosInstance.post('/api/auth/login',
@@ -53,7 +54,7 @@ const Login = () => {
                     })
                     dispatch(clearCart())
                 } catch (mergeError) {
-                    console.error('Lỗi khi gộp giỏ hàng:', mergeError);
+                    console.error('Lỗi khi gộp giỏ hàng:', mergeError)  
                 }
             }
 
@@ -70,10 +71,46 @@ const Login = () => {
             } else {
                 setErrorMsg('Không thể kết nối đến máy chủ!')
             }
-            setIsLoading(false); // Mở khóa nút nếu có lỗi
+            setIsLoading(false)   // Mở khóa nút nếu có lỗi
          }
-    };
+    }
 
+    const handleGoogleSuccess = async (credentialResponse) => {
+        setIsLoading(true)
+        setErrorMsg('')
+        try {
+            const response = await axiosInstance.post('/api/auth/google', 
+                { credential: credentialResponse.credential },
+                { withCredentials: true })
+            
+            const { accessToken, user } = response.data
+
+            dispatch(loginSuccess({ user, token: accessToken })) // dispatch hàm login ở redux để lưu access token vào localStorage
+            setSuccessMsg('Đăng nhập bằng Google thành công.')
+
+            if (cartItems.length > 0) {
+                try {
+                    await axiosInstance.post('/api/cart/merge', { localCart: cartItems })
+                    dispatch(clearCart())
+                } catch (mergeError) {
+                    console.error('Lỗi khi gộp giỏ hàng:', mergeError)  
+                }
+             }
+
+            setTimeout(() => {
+                if (user.role === 'ADMIN') {
+                    navigate('/admin/dashboard')
+                } else {
+                    navigate('/')
+                }
+            }, 1500)
+        } catch (error) {
+                setErrorMsg('Lỗi xác thực Google với máy chủ!')  
+                setIsLoading(false)
+                console.error('Lỗi khi xác thực Google với mấy chủ', error)
+        }
+    }
+  
     return (
         // Nền xám bao quanh toàn bộ form, căn giữa màn hình
         <div className="flex items-center justify-center min-h-[calc(100vh-150px)] bg-gray-50 py-12 px-4 sm:px-6 lg:px-8">
@@ -112,6 +149,7 @@ const Login = () => {
                             required
                             placeholder="Nhập email của bạn"
                             className="w-full px-4 py-3 border border-gray-300 rounded-xl text-gray-900 bg-gray-50 focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all"
+                            tabIndex={1}
                         />
                     </div>
 
@@ -120,9 +158,9 @@ const Login = () => {
                             <label className="block text-sm font-semibold text-gray-700">
                                 Mật khẩu
                             </label>
-                            <a href="#" className="text-sm font-medium text-blue-600 hover:text-blue-500 transition-colors">
+                            <Link to="/forgot-password" className="text-sm font-medium text-blue-600 hover:text-blue-500            transition-colors">
                                 Quên mật khẩu?
-                            </a>
+                            </Link>
                         </div>
                         <input 
                             type="password" 
@@ -131,6 +169,7 @@ const Login = () => {
                             required
                             placeholder="••••••••"
                             className="w-full px-4 py-3 border border-gray-300 rounded-xl text-gray-900 bg-gray-50 focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all"
+                            tabIndex={2}
                         />
                     </div>
 
@@ -145,6 +184,22 @@ const Login = () => {
                     </button>
                 </form>
 
+                {/* Dòng phân cách "Hoặc" */}
+                <div className="mt-6 flex items-center justify-between">
+                    <span className="border-b border-gray-200 w-1/5 lg:w-1/4"></span>
+                    <span className="text-xs text-center text-gray-500 uppercase font-semibold">Hoặc đăng nhập bằng</span>
+                    <span className="border-b border-gray-200 w-1/5 lg:w-1/4"></span>
+                </div>
+
+                {/* Khối chứa nút Google */}
+                <div className="mt-6 flex justify-center">
+                    <GoogleLogin
+                        onSuccess={handleGoogleSuccess}
+                        onError={() => setErrorMsg('Cửa sổ Google bị đóng hoặc xảy ra lỗi!')}
+                        useOneTap // Bật tính năng One Tap (tự động gợi ý đăng nhập ở góc màn hình) cực kỳ hiện đại
+                    />
+                </div>
+
                 {/* Chuyển hướng sang trang đăng ký */}
                 <div className="mt-8 text-center border-t border-gray-100 pt-6">
                     <p className="text-sm text-gray-600">
@@ -157,7 +212,7 @@ const Login = () => {
 
             </div>
         </div>
-    );
-};
+    )  
+}  
 
-export default Login;
+export default Login  

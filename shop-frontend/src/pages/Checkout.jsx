@@ -43,7 +43,7 @@ function Checkout() {
                 cartItems: cartItems.map(item => ({ id: item.id, quantity: item.quantity }))
             }) 
 
-            const { paymentMethod: resMethod, paymentUrl, orderId } = response.data 
+            const { paymentMethod: resMethod, paymentUrl } = response.data // , orderId
 
             // RẼ NHÁNH XỬ LÝ DỰA TRÊN KẾT QUẢ BACKEND TRẢ VỀ
             if (resMethod === 'ZALOPAY' && paymentUrl) {

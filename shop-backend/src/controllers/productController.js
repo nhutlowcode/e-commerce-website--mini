@@ -3,8 +3,13 @@ import prisma from '../config/db.js'
 // 1. lấy danh sách sản phẩm
 export const getProducts = async (req, res) => {
     try {
-        const { keyword, minPrice, maxPrice } = req.query
+        const { keyword, minPrice, maxPrice, page = 1, limit = 12 } = req.query
         const whereClause = {}
+
+        const skip = (parseInt(page) - 1) * parseInt(limit)
+
+        const totalItems = await prisma.product.count({ where: whereClause });
+        const totalPages = Math.ceil(totalItems / parseInt(limit));
 
         // nếu có nhập từ khóa thì lọc ra những sản phẩm mà tên chứa từ khóa đó
         if (keyword) {
@@ -23,12 +28,25 @@ export const getProducts = async (req, res) => {
 
         const products = await prisma.product.findMany({
             where: whereClause,
+            include: {
+                category: true
+            },
             orderBy: {
                 createdAt: 'desc'
-            }
+            },
+            skip: skip,
+            take: parseInt(limit)
         })
 
-        res.status(200).json(products)
+        res.status(200).json({
+            products,
+            pagination: {
+                currentPage: parseInt(page),
+                totalPages,
+                totalItems,
+                limit: parseInt(limit)
+            }
+        })
     } catch (error) {
         console.error('Lỗi Prisma: ', error)
         res.status(500).json({ message: 'Lỗi khi lấy danh sách sản phẩm' })
@@ -42,11 +60,14 @@ export const getProductById = async (req, res) => {
         const product = await prisma.product.findUnique({
             where: {
                 id: parseInt(productId)
+            },
+            include: {
+                category: true
             }
         })
 
         if (!product) {
-            res.status(404).json({ message: 'Không tìm thấy sản phẩm' })
+           return res.status(404).json({ message: 'Không tìm thấy sản phẩm' })
         }
 
         res.status(200).json(product)
@@ -59,27 +80,28 @@ export const getProductById = async (req, res) => {
 // 3. Thêm 1 sản phẩm mới
 export const createProduct = async(req, res) => {
     try {
-        const { name, description, price } = req.body
+        const { name, description, price, stock, categoryId } = req.body
 
         // lấy đường link ảnh do multer và cloudinary trả về qua req.file.path
         const imageUrl = req.file ? req.file.path : ''
 
         if (!name || !description || !price || !imageUrl) {
-            alert('Phải điền đẩy đủ thông tin sản phẩm')
+            return res.status(400).json({ message: 'Phải điền đầy đủ thông tin sản phẩm' })
         }
         const newProduct = await prisma.product.create({
             data: {
                 name,
                 description,
                 price: parseInt(price),
+                stock: parseInt(stock || 0), // Lấy stock, mặc định là 0 nếu FE quên gửi
+                categoryId: parseInt(categoryId), // Gắn vào danh mục
                 image: imageUrl
-
             }
         })
         res.status(201).json(newProduct)
     } catch (error) {
         console.error('Lỗi Prisma: ', error)
-        res.status().json({ message: 'Lỗi khi thêm sản phẩm mới' })
+        res.status(500).json({ message: 'Lỗi khi thêm sản phẩm mới' })
     }
 }
 

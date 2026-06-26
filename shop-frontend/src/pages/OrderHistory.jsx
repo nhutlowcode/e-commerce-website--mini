@@ -42,11 +42,11 @@ function OrderHistory() {
             <h2 className="text-2xl font-bold text-gray-800 mb-6">Lịch sử mua hàng</h2>
 
             {orders.length === 0 ? (
-                <div className="bg-white p-8 rounded-xl shadow-sm text-center border">
+                <div className="bg-white p-8 rounded-xl shadow-sm text-center border m">
                     <p className="text-gray-500">Bạn chưa có đơn hàng nào.</p>
                 </div>
             ) : (
-                <div className="space-y-4">
+                <div className="space-y-4 max-h-150 overflow-y-auto pr-2">
                     {orders.map((order) => {
                         const statusInfo = getStatusTextAndColor(order.status) 
                         return (

@@ -10,7 +10,7 @@ function Home() {
   useEffect(() => {
     axiosInstance.get('/api/products')
       .then((res) => {
-        const allProducts = res.data
+        const allProducts = res.data.products
 
         // lấy 4 sản phẩm đầu tiên
         const featureProducts = allProducts.slice(0, 4)

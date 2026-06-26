@@ -206,55 +206,48 @@ export const getMyOrders = async (req, res) => {
 
 export const getOrderForAdmin = async (req, res) => {
     try {
-        const page = parseInt(req.query.page || 1)
-        const limit = parseInt(req.query.limit || 10)
-        const status = req.query.status
+        // 1. Bóc tách dữ liệu phân trang từ query string (Mặc định trang 1, mỗi trang 10 đơn)
+        const { page = 1, limit = 10 } = req.query 
+        
+        const skip = (parseInt(page) - 1) * parseInt(limit) 
+        const take = parseInt(limit) 
 
-        // Đây là công thức "bất tử" trong mọi ngôn ngữ lập trình.
-        // Nếu bạn đang ở trang 2 (page = 2), mỗi trang hiển thị 10 đơn (limit = 10). Bạn muốn bỏ qua 10 đơn của trang 1 để lấy từ đơn thứ 11.
-        const skip = (page - 1) * limit
+        // 2. Đếm tổng số đơn hàng đang có trong hệ thống
+        const totalOrders = await prisma.order.count() 
+        const totalPages = Math.ceil(totalOrders / take) 
 
-        // cách gán status cho 1 object rỗng đề khi sử dụng nhiều bộ lọc sẽ linh hoạt hơn
-        const whereClause = {}
-        if (status) {
-            whereClause.status = status
-        }
-
-        // chạy 2 lệnh song song là đếm số hóa đơn thỏa điều kiện và lấy dữ liệu của trang hiện tại
-        const [totalOrders, orders] = await prisma.$transaction([
-            prisma.order.count({ where: whereClause }),
-            prisma.order.findMany({
-                where: whereClause,
-                skip: skip,
-                take: limit,
-                orderBy: {
-                    createdAt: 'desc'
-                },
-                include: {
-                    items: {
-                        include: {
-                            product: true
-                        }
+        // 3. Truy vấn lấy dữ liệu đã cắt theo trang
+        const orders = await prisma.order.findMany({
+            skip: skip,
+            take: take,
+            orderBy: {
+                createdAt: 'desc' // Đơn hàng mới nhất luôn xếp lên đầu bảng
+            },
+            include: {
+                items: {
+                    include: {
+                        product: true // Lấy thêm thông tin chi tiết sản phẩm nếu Modal cần dùng
                     }
                 }
-            })
-        ])
+            }
+        }) 
 
-        // trả về dữ liệu thông tin phân trang cho FE làm nut chuyển trang
+        // 4. Trả về cấu trúc JSON chuẩn khít với Frontend mong đợi
         res.status(200).json({
             orders,
             pagination: {
+                currentPage: parseInt(page),
+                totalPages,
                 totalOrders,
-                totalPage: Math.ceil(totalOrders / limit),
-                currentPage: page,
-                limit
+                limit: take
             }
-        })
+        }) 
+
     } catch (error) {
-        console.error('Lỗi lấy danh sách đơn hàng Admin', error)
-        res.status(500).json({ message: 'Lỗi máy chủ, không thể lấy danh sách đơn hàng!'})
+        console.error("Lỗi lấy đơn hàng admin:", error) 
+        res.status(500).json({ message: "Lỗi hệ thống khi lấy danh sách đơn hàng" }) 
     }
-}
+} 
 
 export const updateOrderStatus = async (req, res) => {
     try {

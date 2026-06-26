@@ -20,7 +20,15 @@ function AdminOrders() {
     const fetchOrders = async () => {
         setIsLoading(true)
         try {
-            const response = await axiosInstance.get('/api/orders/admin') 
+            // 👉 TÍNH TOÁN VÀ TRUYỀN PARAMS CHO CHUẨN XỊN:
+            // DataGrid trang 0 -> Backend hiểu là trang 1
+            const backendPage = paginationModel.page + 1;
+            const backendLimit = paginationModel.pageSize;
+
+            const response = await axiosInstance.get(
+                `/api/orders/admin?page=${backendPage}&limit=${backendLimit}`
+            ) 
+            
             setOrders(response.data.orders) 
             setRowCount(response.data.pagination.totalOrders)
         } catch (error) {
@@ -31,10 +39,11 @@ function AdminOrders() {
         }
     } 
 
+    // 👉 Đảm bảo useEffect lắng nghe sự thay đổi của cả trang và kích thước trang để re-fetch dữ liệu
     useEffect(() => {
         // eslint-disable-next-line react-hooks/set-state-in-effect
         fetchOrders() 
-    }, [paginationModel.page, paginationModel.pageSize]) 
+    }, [paginationModel.page, paginationModel.pageSize])
 
     const handleStatusChange = async (orderId, newStatus) => {
         try {
@@ -159,7 +168,7 @@ function AdminOrders() {
             <div className="flex justify-between items-center mb-8">
                 <h2 className='text-3xl font-bold text-gray-800'>Quản trị Đơn hàng</h2>
                 <Link to="/admin/products" className="text-blue-600 font-semibold hover:underline">
-                    &larr  Đi tới Quản lý Sản phẩm
+                    Đi tới Quản lý Sản phẩm
                 </Link>
             </div>
             

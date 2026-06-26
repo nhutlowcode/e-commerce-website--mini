@@ -6,6 +6,7 @@ import productRoutes from './src/routes/productRoutes.js'
 import authRoutes from './src/routes/authRoutes.js'
 import orderRoutes from './src/routes/orderRoutes.js'
 import cartRoutes from './src/routes/cartRoutes.js'
+import categoryRoutes from './src/routes/categoryRoutes.js'
 import cookieParser from 'cookie-parser'
 import { Server } from 'socket.io'
 
@@ -50,6 +51,7 @@ app.use('/api/products', productRoutes)
 app.use('/api/auth', authRoutes)
 app.use('/api/orders', orderRoutes)
 app.use('/api/cart', cartRoutes)
+app.use('/api/category', categoryRoutes)
 
 server.listen(PORT, () => {
     console.log(`🚀 Server đang chạy tại http://localhost:${PORT}`) 

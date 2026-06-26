@@ -1,8 +1,12 @@
+import 'dotenv/config' 
 import prisma from '../config/db.js'
 import jwt from 'jsonwebtoken'
 import crypto from 'crypto'
 import bcrypt from 'bcryptjs'
 import { sendEmail } from '../utils/sendEmail.js'
+import { OAuth2Client } from 'google-auth-library'
+
+const client = new OAuth2Client(process.env.GOOGLE_CLIENT_ID)
 
 const ACCESS_TOKEN_TTL = '1d'
 const REFRESH_TOKEN_TTL = 7 * 24 * 60 * 60 * 1000
@@ -195,12 +199,112 @@ export const forgotPassword = async (req, res) => {
     }
 }
 
-
-const user = await prisma.user.findUInique({
-    where: {
-        resetPasswordToken: token,
-        resetPasswordExpires: {
-            gt: Date.now()
+export const resetPassword = async(req, res) => {
+    try {
+        const { token, newPassword } = req.body
+        
+        if (!token || !newPassword) {
+            return res.status(400).json({ message: 'Không tìm tháy token hoặc mật khẩu mới bị trống.' })
         }
+
+        const user = await prisma.user.findFirst({
+            where: {
+                resetPasswordToken: token,
+                resetPasswordExpires: {
+                    gt: new Date()
+                }
+            }
+        })
+
+        if (!user) {
+            return res.status(400).json({ message: 'Link xác thực không hợp lệ hoặc đã hết hạn.' })
+        }
+
+        const passwordHashed = await bcrypt.hash(newPassword, 10)
+
+        await prisma.user.update({
+            where: {
+                id: user.id
+            },
+            data: {
+                password: passwordHashed,
+                resetPasswordToken: null,
+                resetPasswordExpires: null
+            }
+        })
+
+        res.status(200).json({ message: 'Đổi mật khẩu thành công!' })
+    } catch (error) {
+        console.error("Lỗi ở resetPassword: ", error)
+        res.status(500).json({ message: 'Lỗi khi đổi mật khẩu mới. '})
     }
-})
+}
+
+export const googleLogin = async (req, res) => {
+    try {
+        const { credential } = req.body // lấy chuỗi mã hóa mà FE gửi xuống
+        const userAgent = req.headers['user-agent'] // lấy thông tin thiết bị của người dùng trong browser
+        
+        const ticket = await client.verifyIdToken({
+            idToken: credential,
+            audience: process.env.GOOGLE_CLIENT_ID
+        })
+
+        const payload = ticket.getPayload()
+        const { email, name, picture } = payload
+
+        const existedUser = await prisma.user.findUnique({
+            where: { email }
+        })
+        let user
+        if (existedUser) {
+            user = existedUser
+        } else {
+            user = await prisma.user.create({
+                data: {
+                    email,
+                    name,
+                    avatar: picture,
+                    authProvider: 'google'
+                }
+            })
+        }
+
+         const accessToken = jwt.sign(
+            { 
+                id: user.id,
+                role: user.role
+            }
+          , process.env.JWT_SECRET, 
+          { expiresIn: ACCESS_TOKEN_TTL })
+
+          const refreshToken = crypto.randomBytes(64).toString('hex')
+
+          res.cookie('refreshToken', refreshToken, {
+            httpOnly: true,
+            secure: true,
+            sameSite: 'lax',
+            maxAge: REFRESH_TOKEN_TTL
+          })
+
+          await prisma.session.create({
+            data: {
+                token: refreshToken,
+                userId: user.id,
+                userAgent: userAgent,
+                expiresAt: new Date(Date.now() + REFRESH_TOKEN_TTL)
+            }
+          })
+
+          const { password: _, ...userWithoutPassword } = user
+
+          res.status(200).json({
+            message: 'Đăng nhập thành công',
+            accessToken,
+            user: userWithoutPassword
+          })
+    } catch (error) {
+        console.error("Lỗi Google Login: ", error);
+        res.status(500).json({ message: "Xác thực Google thất bại!" });
+    }
+}
