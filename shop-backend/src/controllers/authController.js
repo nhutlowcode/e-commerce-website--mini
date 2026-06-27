@@ -183,7 +183,7 @@ export const forgotPassword = async (req, res) => {
             }
         })
 
-        const resetLink = `http://localhost:5173/reset-password?token=${resetToken}`
+        const resetLink = `${process.env.CLIENT_URL}/reset-password?token=${resetToken}`
 
         const htmlContent = `
             <h3>Xin chào ${user.name || 'bạn'},</h3>

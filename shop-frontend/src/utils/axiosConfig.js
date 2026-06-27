@@ -2,7 +2,7 @@ import axios from 'axios'
 import { loginSuccess, logout } from '../redux/authSlice.js'
 
 const axiosInstance = axios.create({
-    baseURL: 'http://localhost:5000',
+    baseURL: import.meta.env.VITE_SERVER_URL,
     withCredentials: true
 })
 
@@ -46,7 +46,7 @@ export const setupAxiosInterceptors = (store) => {
 
                 try {
                     const response = await axios.post(
-                        'http://localhost:5000/api/auth/refresh-token',
+                        `${import.meta.env.VITE_SERVER_URL}/api/auth/refresh-token`,
                         {},
                         {
                             withCredentials: true

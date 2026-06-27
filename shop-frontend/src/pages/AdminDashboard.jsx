@@ -31,7 +31,7 @@ function AdminDashboard() {
 
     useEffect(() => {
         // khởi tạo kết nối tới server BE
-        const socket = io('http://localhost:5000')
+        const socket = io(import.meta.env.VITE_SERVER_URL)
 
         // sau khi kết nối thành công thì xin vào phòng của admin
         socket.on('connect', () => {
@@ -106,7 +106,7 @@ function AdminDashboard() {
             {/* Hàng 2: Biểu đồ */}
             <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100">
                 <h3 className="text-xl font-bold text-gray-800 mb-6">Doanh thu theo tháng</h3>
-                <div className="w-full h-[400px]">
+                <div className="w-full h-100">
                     <ResponsiveContainer width="100%" height="100%">
                         <BarChart data={chartData} margin={{ top: 20, right: 30, left: 20, bottom: 5 }}>
                             <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#E5E7EB" />

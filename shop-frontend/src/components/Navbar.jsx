@@ -39,7 +39,7 @@ function Navbar() {
                 <Link to='/order-history' className='text-gray-600 hover:text-blue-600 font-medium transition'>
                     Đơn hàng
                 </Link>
-                {user.role === 'ADMIN' && (
+                {user?.role === 'ADMIN' && (
                     <Link to='/admin/dashboard' className='text-gray-600 hover:text-blue-600 font-medium transition'>
                     Vào trang quản trị
                 </Link>
