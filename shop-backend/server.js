@@ -14,7 +14,7 @@ const app = express()
 const PORT = process.env.PORT || 5000 
 
 app.use(cors({
-    origin: process.env.CLIENT_URL, 
+    origin: [process.env.CLIENT_URL_DEV, process.env.CLIENT_URL_PROD], 
     credentials: true                
 }))
 
@@ -26,7 +26,7 @@ const server = http.createServer(app)
 
 const io = new Server(server, {
     cors: {
-        origin: process.env.CLIENT_URL,
+        origin: [process.env.CLIENT_URL_DEV, process.env.CLIENT_URL_PROD],
         methods: ["GET", "POST", "PUT", "DELETE"]
     }
 })
