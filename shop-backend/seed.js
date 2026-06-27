@@ -1,15 +1,46 @@
-// 
 import prisma from './src/config/db.js';
+import bcrypt from 'bcryptjs';
 
 async function main() {
-    console.log("🌱 Bắt đầu gieo mầm dữ liệu...");
+    console.log("🌱 Bắt đầu gieo mầm dữ liệu tổng lực...");
 
     // ==========================================
-    // BƯỚC 1: TẠO DANH MỤC TRƯỚC (NẾU CHƯA CÓ)
+    // BƯỚC 1: TẠO TÀI KHOẢN (ADMIN & USER)
+    // ==========================================
+    console.log("👤 Đang khởi tạo tài khoản hệ thống...");
+    
+    const hashedPassword = await bcrypt.hash('123456', 10);
+
+    const admin = await prisma.user.upsert({
+        where: { email: 'admin@shop.com' },
+        update: {},
+        create: {
+            email: 'admin@shop.com',
+            password: hashedPassword,
+            name: 'Super Admin',
+            role: 'ADMIN',
+        },
+    });
+
+    const user = await prisma.user.upsert({
+        where: { email: 'minhnhutst365@gmail.com' },
+        update: {},
+        create: {
+            email: 'minhnhutst365@gmail.com',
+            password: hashedPassword,
+            name: 'Minh Nhựt',
+            role: 'USER',
+        },
+    });
+    console.log("✅ Đã tạo xong 2 tài khoản mẫu (Mật khẩu: 123456)");
+    console.log(`   - Admin: ${admin.email}`);
+    console.log(`   - User: ${user.email}`);
+
+    // ==========================================
+    // BƯỚC 2: TẠO DANH MỤC TRƯỚC
     // ==========================================
     console.log("📂 Đang khởi tạo các danh mục cốt lõi...");
     
-    // Dùng upsert: Có rồi thì thôi, chưa có thì tạo mới
     const catAoNam = await prisma.category.upsert({ where: { name: "Áo Nam" }, update: {}, create: { name: "Áo Nam" } });
     const catQuanNam = await prisma.category.upsert({ where: { name: "Quần Nam" }, update: {}, create: { name: "Quần Nam" } });
     const catAoKhoac = await prisma.category.upsert({ where: { name: "Áo Khoác" }, update: {}, create: { name: "Áo Khoác" } });
@@ -18,11 +49,13 @@ async function main() {
     const catVayNu = await prisma.category.upsert({ where: { name: "Váy Nữ" }, update: {}, create: { name: "Váy Nữ" } });
 
     // ==========================================
-    // BƯỚC 2: TẠO SẢN PHẨM VÀ GẮN ID DANH MỤC VÀO
+    // BƯỚC 3: TẠO SẢN PHẨM VÀ GẮN KHÓA NGOẠI
     // ==========================================
-    console.log("👗 Đang bơm 20 sản phẩm quần áo vào kho...");
+    console.log("👗 Đang dọn dẹp và bơm 20 sản phẩm quần áo vào kho...");
+    
+    // Xóa sạch sản phẩm cũ để tránh duplicate khi chạy file seed nhiều lần
+    await prisma.product.deleteMany();
 
-    // Lưu ý: Chữ 'category: "..."' đã được thay thế hoàn toàn bằng 'categoryId: biến.id'
     const outfitProducts = [
         { name: "Áo Thun Nam Cổ Tròn Basic", description: "Áo thun 100% cotton thoáng mát, thấm hút mồ hôi tốt.", price: 150000, stock: 50, image: "https://picsum.photos/400/500?random=1", categoryId: catAoNam.id },
         { name: "Áo Polo Nam Dáng Regular", description: "Áo Polo thanh lịch, phù hợp đi làm và đi chơi.", price: 250000, stock: 30, image: "https://picsum.photos/400/500?random=2", categoryId: catAoNam.id },
@@ -52,6 +85,7 @@ async function main() {
     });
 
     console.log(`✅ Đã thêm thành công ${createdProducts.count} sản phẩm!`);
+    console.log("🎉 HOÀN TẤT QUÁ TRÌNH GIEO MẦM!");
 }
 
 main()
@@ -62,55 +96,3 @@ main()
     .finally(async () => {
         await prisma.$disconnect();
     });
-
-
-// =====================================================================
-
-// import prisma from './src/config/db.js';
-// import bcrypt from 'bcryptjs';
-
-
-// async function main() {
-//     console.log("🌱 Đang gieo mầm dữ liệu (Seeding)...");
-
-//     // Phải băm mật khẩu ra, nếu không lát nữa đem đi Test API Đăng nhập sẽ bị lỗi sai pass
-//     const hashedPassword = await bcrypt.hash('123456', 10);
-
-//     // 1. Bơm tài khoản Admin
-//     const admin = await prisma.user.upsert({
-//         where: { email: 'admin@.com' },
-//         update: {},
-//         create: {
-//             email: 'admin@.com',
-//             password: hashedPassword,
-//             name: 'Admin',
-//             role: 'ADMIN',
-//         },
-//     });
-
-//     // 2. Bơm tài khoản User của bạn
-//     const user = await prisma.user.upsert({
-//         where: { email: 'minhnhutst365@gmail.com' },
-//         update: {},
-//         create: {
-//             email: 'minhnhutst365@gmail.com',
-//             password: hashedPassword,
-//             name: 'Minh Nhựt',
-//             role: 'USER',
-//         },
-//     });
-
-//     console.log("✅ Đã tạo xong 2 tài khoản mẫu với mật khẩu mặc định là: 123456");
-//     console.log(`- Admin: ${admin.email}`);
-//     console.log(`- User: ${user.email}`);
-// }
-
-// main()
-//     .catch((e) => {
-//         console.error("❌ Lỗi Seeding:", e);
-//         process.exit(1);
-//     })
-//     .finally(async () => {
-//         // Xong việc thì ngắt kết nối DB cho an toàn
-//         await prisma.$disconnect();
-//     });
